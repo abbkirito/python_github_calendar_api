@@ -6,6 +6,7 @@ import json
 
 def list_split(items, n):
     return [items[i:i + n] for i in range(0, len(items), n)]
+
 def getdata(name):
     gitpage = requests.get("https://github.com/" + name)
     data = gitpage.text
@@ -30,14 +31,35 @@ def getdata(name):
         "contributions": datalistsplit
     }
     return returndata
+
 class handler(BaseHTTPRequestHandler):
     def do_GET(self):
         path = self.path
-        user = path.split('?')[1]
-        data = getdata(user)
-        self.send_response(200)
-        self.send_header('Access-Control-Allow-Origin', '*')
-        self.send_header('Content-type', 'application/json')
-        self.end_headers()
-        self.wfile.write(json.dumps(data).encode('utf-8'))
+        
+        # 添加根路径处理
+        if path == '/' or path == '':
+            self.send_response(200)
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.send_header('Content-type', 'application/json')
+            self.end_headers()
+            self.wfile.write(json.dumps({
+                "message": "GitHub Calendar API",
+                "usage": "/?username 获取用户贡献数据"
+            }).encode('utf-8'))
+            return
+        
+        # 原有的用户数据获取逻辑
+        try:
+            user = path.split('?')[1]
+            data = getdata(user)
+            self.send_response(200)
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.send_header('Content-type', 'application/json')
+            self.end_headers()
+            self.wfile.write(json.dumps(data).encode('utf-8'))
+        except:
+            self.send_response(400)
+            self.send_header('Content-type', 'application/json')
+            self.end_headers()
+            self.wfile.write(json.dumps({"error": "Invalid request"}).encode('utf-8'))
         return
